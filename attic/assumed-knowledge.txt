@@ -1,0 +1,26 @@
+-- what I assume you know
+	 * a little about objects: enough to roll one and use it
+	 * a little about sub references ("closures", "anonymous subs"): enough to create one and invoke it
+
+	 -- Here's both of those things in 60 seconds:
+	 		* "an object is a reference that knows how to find its actions"
+				-- that means: $duck->eat('bread') # $duck knows where 'sub eat' is
+				-- when 'sub eat' is found, it automatically gets $duck passed in
+				-- that's the tip of the iceberg but really is enough
+			* "a sub reference is an unnamed sub"
+				-- that means:
+					 my $bumper;
+					 {
+							my $i = 0;
+							$bumper = sub { $i++; return $i };
+					 }
+					 # even though $i looks like it's gone out of scope, $bumper has
+					 # access to it
+				-- a closure is a sub reference that "closes" over some variables,
+					 like $i in the example above.
+				-- A sub reference is just a reference, so invoking it is just a
+					 standard de-referencing operation:
+					 $bumper->(); $bumper->();	# bump it, bump it!
+
+		-- Great, we're all up to speed.
+

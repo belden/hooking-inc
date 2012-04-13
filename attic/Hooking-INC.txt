@@ -1,0 +1,134 @@
+Notes:
+------
+
+-- goals:
+	 * introduce the @INC hooks described in 'perldoc -f require'
+   * introduce tied @INC
+   * gotchas
+
+-- Here's why you might care about this:
+	 * sheer play; knowledge collection  # totally legit goals
+	 * answer questions about a codebase # my sweet spot, and what I'll focus on
+	 * generate sourcecode               # why die during 'use' when you can just fake it
+	 * automatic cpan installs           # why fake it when you can install it
+
+-- perldoc -f require: @INC can have hooks put in it:
+	 1. subroutine reference:   unshift @INC, \&hook;
+	 2. array reference         unshift @INC, [\&hook, @args_for_hook];
+	 3. object                  unshift @INC, $object;
+
+-- how they should act:
+	 * "I don't know how to handle this thing, move on down the line."
+	 	 		return undef;
+
+	 * "Oh, I found that file, here it is!"
+	 	 	 open my $fh, '<', $somewhere;
+			 return $fh;
+
+	 * "Here, let me make that for you."
+	 	 	 return $generator; # this needs to be a subref
+
+-- What they get depends on what you've put in place:
+	 1. subroutine reference:
+	 	  	my ($reference_to_myself, $file_to_load) = @_;
+	 2. array reference:
+	      my ($array_reference, $file_to_load) = @_;
+	 3. object:
+	 		  my ($self, $file_to_load) = @_;
+
+-- Let's see some code. Here's how you can keep track of everything that your program loads.
+
+     1    package INCSnooper;
+     2    
+     3    sub import {
+     4    		unshift @INC, \&tracker;
+     5    }
+     6    
+     7    sub tracker {
+     8         my ($me, $file_to_load) = @_;
+     9    
+    10         warn "want to load: $file_to_load\n";
+    11    
+    12         return undef;        # send a "keep looking" message
+    13    }
+    14    
+    15    1;
+
+		$ perl -I. -MINCSnooper -e 'use strict; use warnings; use Data::Dumper'
+		want to load: strict.pm
+		want to load: warnings.pm
+		want to load: Data/Dumper.pm
+		want to load: Carp.pm
+		want to load: Exporter.pm
+		want to load: XSLoader.pm
+		want to load: bytes.pm
+		want to load: overload.pm
+		want to load: warnings/register.pm
+
+-- We can make the output a bit more pretty:
+
+     1	package INCSnooper::Pretty;
+     2	
+     3	sub import {
+     4		unshift @INC, \&tracker;
+     5	}
+     6	
+     7	sub tracker {
+     8		 my ($me, $file_to_load) = @_;
+     9	
+    10		 my $padding = '';
+    11		 my $lookback = 0;
+    12		 while (caller($lookback)) {
+    13			 $padding .= "-->" if (caller($lookback++))[7];      # only bump padding if this frame is_require.
+    14		 }
+    15	
+    16		 $padding =~ s{->-}{---}g;                             # I'm lame
+    17		 warn "$padding$file_to_load\n";
+    18		 return undef;                                     		 # send a "keep looking" message
+    19	}
+    20	
+    21	1;
+
+		$ perl -I. -MINCSnooper::Pretty -e 'use strict; use warnings; use Data::Dumper'
+		strict.pm
+		warnings.pm
+		Data/Dumper.pm
+		-->Carp.pm
+		----->Exporter.pm
+		-->XSLoader.pm
+		-->bytes.pm
+		-->overload.pm
+		----->warnings/register.pm
+
+-- You could iterate on that.
+
+-- I'm not going to show you array references in @INC. They seem like a weird halfway point between a bare
+	 coderef and an object. There's one gotcha with sticking an object in INC: it needs to implement a method
+	 named INC, but it has to be fully qualified into that package's namespace.
+
+   1	package foo;
+   2	
+   3	sub INC { print "hello world\n" }
+   4	
+   5	1;
+
+
+   $ perl -Mfoo -e 'foo->INC'
+   Can't locate object method "INC" via package "foo" at -e line 1.
+
+	 $ perl -Mfoo -e 'main->INC'
+	 hello world
+
+-- Here it is done right:
+
+   1	package bar;
+   2	
+   3	sub bar::INC { print "greetings earthlings\n" }
+   4	
+   5	1;
+
+   $ perl -Mbar -e 'bar->INC'
+	 greetings earthlings
+
+-- This has just been a recitation of 'perldoc -f require' so far. You can choose for yourself whether to stick
+	 coderefs, 

@@ -1,0 +1,31 @@
+#!/usr/bin/perl
+
+my @samples = (
+	q{echo 'hello world'},
+	q{echo 'goodnight moon'},
+);
+
+my $desired = $samples[sample_number()];
+die "no samples left!\n" unless $desired;
+
+open my $xclip, '| xclip' or die "fork xclip: $!\n";
+print $xclip $desired;
+close $xclip;
+
+bump_sample();
+
+exit 0;
+
+sub bump_sample {
+	my $number = sample_number();
+	open my $fh, '+>', '.sample_counter';
+	print $fh $number + 1, "\n";
+	close $fh;
+}
+
+sub sample_number {
+	local @ARGV = ('.sample_counter');
+	chomp(my $number = <>);
+	$number //= 0;
+	return $number;
+}
