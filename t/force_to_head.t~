@@ -1,0 +1,11 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use Test::More;
+
+my @array = (2..10);
+tie @array, 'ForceToHead', 'a', @array;
+unshift @array, 2;
+is_deeply( \@array, ['a',1..10] );

@@ -1,31 +1,26 @@
 package ForceToHead;
 
 sub TIEARRAY {
-	my ($class, $force_to_head) = @_;
+	my ($class, $head, @body) = @_;
 	return bless {
-		inc => [$head, @INC],
-		original => [@INC],
-		head => $force_to_head,
+		body => [@body],
+		head => $head,
 	}, $class;
 }
 
 sub FETCH {
 	my ($self, $index) = @_;
-	return $self->{inc}[$index];
+	return ($self->{head}, @{$self->{body}})[$index];
 }
 
 sub STORE {
 	my ($self, $index, $value) = @_;
-	if ($index == 0) {
-		$self->SPLICE(1, 0, $value);
-	} else {
-		$self->{inc}[$index] = $value;
-	}
+	$self->{body}[$index] = $value;
 }
 
 sub FETCHSIZE {
 	my ($self) = @_;
-	return scalar @{$self->{inc}} + 1;
+	return scalar @{$self->{body}} + 1;
 }
 
 sub STORESIZE {
@@ -45,42 +40,42 @@ sub STORESIZE {
 sub EXTEND {}
 sub EXISTS {
 	my ($self, $index) = @_;
-	return defined $self->{inc}[$index];
+	return defined $self->{body}[$index];
 }
 
 sub DELETE {
 	my ($self, $index) = @_;
-	delete $self->{inc}[$index];
+	delete $self->{body}[$index];
 }
 
 sub CLEAR {
 	my ($self) = @_;
-	$self->{inc} = [];
+	$self->{body} = [];
 }
 
 sub PUSH {
 	my ($self, @list) = @_;
-	push @{$self->{inc}}, @list;
+	push @{$self->{body}}, @list;
 }
 
 sub POP {
 	my $self = shift;
-	return pop @{$self->{inc}};
+	return pop @{$self->{body}};
 }
 
 sub SHIFT {
 	my $self = shift;
-	return shift @{$self->{inc}};
+	return shift @{$self->{body}};
 }
 
 sub UNSHIFT {
 	my $self = shift;
-	unshift @{$self->{inc}}, @_;
+	unshift @{$self->{body}}, @_;
 }
 
 sub SPLICE {
 	my $self = shift;
-	splice @{$self->{inc}}, @_;
+	splice @{$self->{body}}, @_;
 }
 
 1;

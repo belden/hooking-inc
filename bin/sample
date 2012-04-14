@@ -49,7 +49,7 @@ sub to_xclip {
 	open my $xclip, '| xclip' or die "fork xclip: $!\n";
 
 	my $recurse = (defined $index && $samples[$index + 1])
-		? "                                    ;./sample"
+		? "                                    ;sample"
 		: '';
 
 	print $xclip "$sample$recurse\n";

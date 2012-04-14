@@ -3,7 +3,7 @@ package KingOfTheINC;
 use ForceToHead;
 
 sub import {
-	tie @INC, 'ForceToHead', \&tracker;
+	tie @INC, 'ForceToHead', \&tracker, @INC;
 }
 
 sub tracker {
