@@ -9,15 +9,17 @@ my @samples = (
 	q{cat -n lib/foo.pm},
 	q{perl -Mfoo -e 'foo->INC'},
 	q{perl -Mfoo -e 'main->INC'},
+	q{vim -c 'set nu' lib/Fink.pm},
 	q{perl -MFink -Mstrict -Mwarnings -MData::Dumper -e 1},
 	q{perl -MIndented -Mstrict -Mwarnings -MData::Dumper -e 1},
 	q{vim -c 'set nu' bin/toy1},
 	q{bin/toy1 | egrep -i 'code|somewhere|elsewhere' | grep -v blyman},
+	q{perl -MKingOfTheINC bin/toy1 | egrep -i 'code|somewhere|elsewhere' | grep -v blyman},
 	q{perl -MAlwaysAtTail -e 'use lib "/tmp"; use something_not_here;'},
 	q{vim -c 'set nu' lib/GenerateCode.pm},
 	q{perl -MGenerateCode -e 'use lib "/tmp"; use something_not_here;'},
 	q{vim -c 'set nu' lib/Peeker.pm},
-	q{perl -MPeeker -MDBIx::Class -e 1},
+	q{perl -MPeeker -MDBIx::Class -e 1 | less},
 );
 
 GetOptions(
@@ -52,7 +54,8 @@ sub to_xclip {
 		? "                                    ;sample"
 		: '';
 
-	print $xclip "$sample$recurse\n";
+	my $newline = $sample =~ m{\| less} ? '' : "\n";
+	print $xclip "$sample$recurse$newline";
 	close $xclip;
 }
 
