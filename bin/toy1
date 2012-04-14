@@ -1,0 +1,22 @@
+#!/usr/bin/perl
+
+BEGIN {
+	use Fink;
+
+	print join "\n", map { "after using Fink   : $_" } @INC;
+	print "\n\n";
+}
+
+BEGIN {
+	use lib '/somewhere';
+
+	print join "\n", map { "after use lib      : $_" } @INC;
+	print "\n\n";
+}
+
+BEGIN {
+	unshift @INC, '/elsewhere';
+
+	print join "\n", map { "after unshift \@INC: $_" } @INC;
+	print "\n";
+}

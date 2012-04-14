@@ -1,20 +1,60 @@
 #!/usr/bin/perl
 
+use strict;
+use warnings;
+
+use Getopt::Long;
+
 my @samples = (
-	q{echo 'hello world'},
-	q{echo 'goodnight moon'},
+	q{cat -n lib/foo.pm},
+	q{perl -Mfoo -e 'foo->INC'},
+	q{perl -Mfoo -e 'main->INC'},
+	q{perl -MFink -Mstrict -Mwarnings -MData::Dumper -e 1},
+	q{perl -MIndented -Mstrict -Mwarnings -MData::Dumper -e 1},
+	q{vim -c 'set nu' bin/toy1},
+	q{bin/toy1 | egrep -i 'code|somewhere|elsewhere' | grep -v blyman},
+	q{perl -MAlwaysAtTail -e 'use lib "/tmp"; use something_not_here;'},
+	q{vim -c 'set nu' lib/GenerateCode.pm},
+	q{perl -MGenerateCode -e 'use lib "/tmp"; use something_not_here;'},
+	q{vim -c 'set nu' lib/Peeker.pm},
+	q{perl -MPeeker -MDBIx::Class -e 1},
 );
 
-my $desired = $samples[sample_number()];
-die "no samples left!\n" unless $desired;
+GetOptions(
+	'reset' => \(my $do_reset = 0),
+	'like=s' => \(my $search),
+);
 
-open my $xclip, '| xclip' or die "fork xclip: $!\n";
-print $xclip $desired;
-close $xclip;
+if ($do_reset) {
+	open my $fh, '+>', '.sample_counter';
+	print $fh "-1\n";
+	close $fh;
+	exec $0;
+	die "exec failed: wtf?! $!\n";
+}
 
-bump_sample();
+if ($search) {
+	my ($match) = grep { $_ =~ /$search/ } @samples;
+	to_xclip($match) if $match;
+} else {
+	my $index = sample_number();
+	my $desired = $samples[$index];
+	die "no samples left!\n" unless $desired;
+	to_xclip($desired, $index);
+	bump_sample();
+}
 
-exit 0;
+sub to_xclip {
+	my ($sample, $index) = @_;
+	open my $xclip, '| xclip' or die "fork xclip: $!\n";
+
+	my $recurse = (defined $index && $samples[$index + 1])
+		? "                                    ;./sample"
+		: '';
+
+	print $xclip "$sample$recurse\n";
+	close $xclip;
+}
 
 sub bump_sample {
 	my $number = sample_number();
@@ -25,7 +65,8 @@ sub bump_sample {
 
 sub sample_number {
 	local @ARGV = ('.sample_counter');
-	chomp(my $number = <>);
+	my $number = <>;
 	$number //= 0;
+	chomp $number;
 	return $number;
 }
